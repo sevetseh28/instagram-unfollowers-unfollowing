@@ -7,13 +7,16 @@ I didnt trust those commercial mobile apps where you can't see what's really goi
 
 With this you can see all the code and what is actually doing: some nice simple requests I sniffed with Chrome inspector :)
 
+## Requirements
+Python 3.6.5 (but should work on others, but not on Python 2)
+
 ## Usage
 First, get logged in on Instagram web and grab the Cookie and your instagram ID (google some web to find your ID)
 and paste those into the ```settings.py``` file.
 
 The ```COOKIE``` setting must be the Cookie value (the whole string). You can get it with a Chrome extension like EditThisCookie.
 
-Then run main.py and that's it!
+Then run ```python main.py``` and that's it!
 
 ** If you want to dump your followers/following to MongoDB so you can do some intresting queries, you must enable the setting on settings.py
 and don't forget to ```pip install pymongo``` before.
