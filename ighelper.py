@@ -10,8 +10,8 @@ from settings import *
 
 class IgHelper(object):
     def __init__(self):
-        self.followers: List = self.extract_followers()
-        self.following: List = self.extract_following()
+        self.followers: List = list(self.extract_followers())
+        self.following: List = list(self.extract_following())
 
     @property
     def followers_set(self) -> Set:
@@ -28,7 +28,7 @@ class IgHelper(object):
     @property
     def unfollowing(self) -> Set:
         return self.followers_set - self.following_set
-    
+
     def dump_to_mongo(self):
         """
         Dumps followers and following to MongoDB
@@ -57,7 +57,6 @@ class IgHelper(object):
         }
 
         # FOLLOWING
-        ret = []
         querystring = urlencode(query)
         resp = requests.request("GET", BASE_URL, params=querystring, headers=HEADERS)
         data = json.loads(resp.content)
@@ -67,8 +66,8 @@ class IgHelper(object):
         while True:
             for edge in edges:
                 edge["_id"] = edge['node']['id']
-                ret.append(edge)
                 print(f'FOLLOWING: {edge}')
+                yield edge
 
             has_next_page = page_info['has_next_page']
             if has_next_page:
@@ -87,7 +86,7 @@ class IgHelper(object):
                 page_info = data['data']['user']['edge_follow']['page_info']
                 edges = data['data']['user']['edge_follow']['edges']
             else:
-                return ret
+                return
 
     @staticmethod
     def extract_followers() -> List[dict]:
@@ -105,7 +104,6 @@ class IgHelper(object):
         }
 
         # EXTRACT FOLLOWERS
-        ret = []
         querystring = urlencode(query)
         resp = requests.request("GET", BASE_URL, params=querystring, headers=HEADERS)
         data = json.loads(resp.content)
@@ -115,8 +113,8 @@ class IgHelper(object):
         while True:
             for edge in edges:
                 edge["_id"] = edge['node']['id']
-                ret.append(edge)
                 print(f'FOLLOWER: {edge}')
+                yield edge
 
             has_next_page = page_info['has_next_page']
             if has_next_page:
@@ -135,4 +133,4 @@ class IgHelper(object):
                 page_info = data['data']['user']['edge_followed_by']['page_info']
                 edges = data['data']['user']['edge_followed_by']['edges']
             else:
-                return ret
+                return
