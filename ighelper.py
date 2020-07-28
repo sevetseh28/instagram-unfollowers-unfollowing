@@ -1,6 +1,5 @@
 import json
-import time
-from typing import List, Set
+from typing import List, Set, Dict, Generator
 from urllib.parse import urlencode
 
 import requests
@@ -43,100 +42,55 @@ class IgHelper(object):
         following_col.insert_many(self.following)
 
     @staticmethod
-    def extract_following() -> List[dict]:
+    def _extract_entities(query_hash: str, entity_id: str) -> Generator[Dict]:
+        """
+        Generator that yields the corresponding entities based on the parameters.
+        :param query_hash: The Query hash used to Request the entity type
+        :param entity_id: string that defines the key inside the response to access the entity
+        """
+        query = {
+            "query_hash": query_hash,
+            "variables": json.dumps({
+                "id": TARGET_ID,
+                "include_reel": True,
+                "first": 500
+            })
+        }
+
+        has_next_page = True
+        while has_next_page:
+            querystring = urlencode(query)
+            resp = requests.request("GET", BASE_URL, params=querystring, headers=HEADERS)
+            data = json.loads(resp.content)
+            page_info = data['data']['user'][entity_id]['page_info']
+            edges = data['data']['user'][entity_id]['edges']
+            has_next_page = page_info['has_next_page']
+
+            for edge in edges:
+                edge["_id"] = edge['node']['id']
+                print(f'{entity_id} - yielding entity: {edge}')
+                yield edge
+
+            if has_next_page:
+                query['variables'] = json.dumps({
+                    "id": TARGET_ID,
+                    "include_reel": True,
+                    "first": 500,
+                    "after": page_info['end_cursor']
+                })
+
+    @staticmethod
+    def extract_following() -> Generator[Dict]:
         """
         Runs extraction of following doing paginated requests
         :return: list of nodes (dicts) containing the following accounts
         """
-        query = {
-            "query_hash": FOLLOWING_QUERY_HASH,
-            "variables": json.dumps({
-                "id": TARGET_ID,
-                "include_reel": True,
-                "first": 500
-            })
-        }
-
-        # FOLLOWING
-        querystring = urlencode(query)
-        resp = requests.request("GET", BASE_URL, params=querystring, headers=HEADERS)
-        data = json.loads(resp.content)
-        page_info = data['data']['user']['edge_follow']['page_info']
-        edges = data['data']['user']['edge_follow']['edges']
-
-        while True:
-            for edge in edges:
-                edge["_id"] = edge['node']['id']
-                print(f'FOLLOWING: {edge}')
-                yield edge
-
-            has_next_page = page_info['has_next_page']
-            if has_next_page:
-                new_query = {
-                    "query_hash": FOLLOWING_QUERY_HASH,
-                    "variables": json.dumps({
-                        "id": TARGET_ID,
-                        "include_reel": True,
-                        "first": 500,
-                        "after": page_info['end_cursor']
-                    })
-                }
-                querystring = urlencode(new_query)
-                resp = requests.request("GET", BASE_URL, params=querystring, headers=HEADERS)
-                data = json.loads(resp.content)
-                page_info = data['data']['user']['edge_follow']['page_info']
-                edges = data['data']['user']['edge_follow']['edges']
-            else:
-                return
+        yield from IgHelper._extract_entities(query_hash=FOLLOWING_QUERY_HASH, entity_id='edge_follow')
 
     @staticmethod
-    def extract_followers() -> List[dict]:
+    def extract_followers() -> Generator[Dict]:
         """
         Runs extraction of followers doing paginated requests
         :return: list of nodes (dicts) containing the followers
         """
-        query = {
-            "query_hash": FOLLOWERS_QUERY_HASH,
-            "variables": json.dumps({
-                "id": TARGET_ID,
-                "include_reel": True,
-                "first": 500
-            })
-        }
-
-        # EXTRACT FOLLOWERS
-        querystring = urlencode(query)
-        resp = requests.request("GET", BASE_URL, params=querystring, headers=HEADERS)
-        data = json.loads(resp.content)
-        page_info = data['data']['user']['edge_followed_by']['page_info']
-        edges = data['data']['user']['edge_followed_by']['edges']
-
-        while True:
-            for edge in edges:
-                edge["_id"] = edge['node']['id']
-                print(f'FOLLOWER: {edge}')
-                yield edge
-
-            has_next_page = page_info['has_next_page']
-            if has_next_page:
-                new_query = {
-                    "query_hash": FOLLOWERS_QUERY_HASH,
-                    "variables": json.dumps({
-                        "id": TARGET_ID,
-                        "include_reel": True,
-                        "first": 500,
-                        "after": page_info['end_cursor']
-                    })
-                }
-                while True:
-                    querystring = urlencode(new_query)
-                    resp = requests.request("GET", BASE_URL, params=querystring, headers=HEADERS)
-                    if resp.status_code != 200:
-                        time.sleep(2)
-                        continue
-                    data = json.loads(resp.content)
-                    page_info = data['data']['user']['edge_followed_by']['page_info']
-                    edges = data['data']['user']['edge_followed_by']['edges']
-                    break
-            else:
-                return
+        yield from IgHelper._extract_entities(query_hash=FOLLOWERS_QUERY_HASH, entity_id='edge_followed_by')
