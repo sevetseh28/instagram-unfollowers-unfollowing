@@ -42,7 +42,7 @@ class IgHelper(object):
         following_col.insert_many(self.following)
 
     @staticmethod
-    def _extract_entities(query_hash: str, entity_id: str) -> Generator[Dict]:
+    def _extract_entities(query_hash: str, entity_id: str) -> Generator[Dict, None, None]:
         """
         Generator that yields the corresponding entities based on the parameters.
         :param query_hash: The Query hash used to Request the entity type
@@ -80,17 +80,17 @@ class IgHelper(object):
                 })
 
     @staticmethod
-    def extract_following() -> Generator[Dict]:
+    def extract_following() -> Generator[Dict, None, None]:
         """
         Runs extraction of following doing paginated requests
-        :return: list of nodes (dicts) containing the following accounts
+        :return: generator that yield (dicts) containing the followed accounts
         """
         yield from IgHelper._extract_entities(query_hash=FOLLOWING_QUERY_HASH, entity_id='edge_follow')
 
     @staticmethod
-    def extract_followers() -> Generator[Dict]:
+    def extract_followers() -> Generator[Dict, None, None]:
         """
         Runs extraction of followers doing paginated requests
-        :return: list of nodes (dicts) containing the followers
+        :return: generator that yield (dicts) containing the followed by accounts
         """
         yield from IgHelper._extract_entities(query_hash=FOLLOWERS_QUERY_HASH, entity_id='edge_followed_by')
