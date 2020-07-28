@@ -1,4 +1,5 @@
 import json
+import time
 from typing import List, Set
 from urllib.parse import urlencode
 
@@ -127,10 +128,15 @@ class IgHelper(object):
                         "after": page_info['end_cursor']
                     })
                 }
-                querystring = urlencode(new_query)
-                resp = requests.request("GET", BASE_URL, params=querystring, headers=HEADERS)
-                data = json.loads(resp.content)
-                page_info = data['data']['user']['edge_followed_by']['page_info']
-                edges = data['data']['user']['edge_followed_by']['edges']
+                while True:
+                    querystring = urlencode(new_query)
+                    resp = requests.request("GET", BASE_URL, params=querystring, headers=HEADERS)
+                    if resp.status_code != 200:
+                        time.sleep(2)
+                        continue
+                    data = json.loads(resp.content)
+                    page_info = data['data']['user']['edge_followed_by']['page_info']
+                    edges = data['data']['user']['edge_followed_by']['edges']
+                    break
             else:
                 return
