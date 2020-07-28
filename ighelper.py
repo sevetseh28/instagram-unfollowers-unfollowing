@@ -3,7 +3,6 @@ from typing import List, Set
 from urllib.parse import urlencode
 
 import requests
-from pymongo import MongoClient
 
 from settings import *
 
@@ -34,6 +33,7 @@ class IgHelper(object):
         Dumps followers and following to MongoDB
         :return: 
         """
+        from pymongo import MongoClient
         client = MongoClient(host=MONGO_HOST, port=MONGO_PORT)
         db = client[MONGO_DB]
         followers_col = db[f'{TARGET_ID}_followers']
